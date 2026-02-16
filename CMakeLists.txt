@@ -1,16 +1,75 @@
+# Cmake is a mistake to humanity
+
 cmake_minimum_required(VERSION 3.16)
-project(hello)
+project(GreyHeavens)
 
 # set the output directory for built objects.
 # This makes sure that the dynamic library goes into the build directory automatically.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
-# This assumes the SDL source is available in vendor/SDL
+# Variables
+set(VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
+file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+core/source/* core/include/*
+)
+
+include_directories(core/include)
+
+# Third Parties
 add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
 
-# Create your game executable target as usual
-add_executable(hello WIN32 core/hello.c)
+set(PROJECT_FILES ${SRC_FILES})
+add_executable(${PROJECT_NAME} WIN32 ${PROJECT_FILES} core/main.cpp)
+# add_executable(${PROJECT_NAME} WIN32 core/main.cpp)
 
-# Link to the actual SDL3 library.
-target_link_libraries(hello PRIVATE SDL3::SDL3)
+find_package(OpenGL REQUIRED)
+include_directories(${OPENGL_INCLUDE_DIRS})
+
+# Glad
+add_library(glad
+  STATIC
+    ${VENDOR_DIR}/glad/src/glad.c
+)
+
+target_include_directories(glad
+  PRIVATE
+    ${VENDOR_DIR}/glad/include
+)
+
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    ${VENDOR_DIR}/glad/include
+)
+
+# Shaders
+file(GLOB_RECURSE GLSL_SOURCE_FILES
+    "${PROJECT_SOURCE_DIR}/resource/shaders/*.frag"
+    "${PROJECT_SOURCE_DIR}/resource/shaders/*.vert"
+    "${PROJECT_SOURCE_DIR}/resource/shaders/*.comp"
+    )
+
+# Add shader files to IDE
+target_sources(${PROJECT_NAME} PRIVATE ${GLSL_SOURCE_FILES})
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}/resource/shaders"
+    PREFIX "Shaders"
+    FILES ${GLSL_SOURCE_FILES}
+)
+
+# Copy assets files to .exe directory
+# Might need a rework soon, might be worth to copy the .exe file into the asset folder
+# or use symlink. The point is to not make copy of asset folder
+set (destination "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIGURATION>/assets")
+add_custom_command(
+     TARGET ${PROJECT_NAME} POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resource" "${destination}"
+)
+
+# Linking
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    SDL3::SDL3
+#    OpenGL::OpenGL
+    glad
+    ${CMAKE_DL_LIBS} # Needed for glad - https://stackoverflow.com/a/56842079/2394163
+)
