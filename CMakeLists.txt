@@ -18,6 +18,8 @@ include_directories(core/include)
 
 # Third Parties
 add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
+include_directories(vendor/stb_image)
+
 
 set(PROJECT_FILES ${SRC_FILES})
 add_executable(${PROJECT_NAME} WIN32 ${PROJECT_FILES} core/main.cpp)
@@ -66,10 +68,20 @@ add_custom_command(
      COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resource" "${destination}"
 )
 
+# glm
+include(FetchContent)
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY	https://github.com/g-truc/glm.git
+	GIT_TAG 	0af55ccecd98d4e5a8d1fad7de25ba429d60e863 #refs/tags/1.0.1
+)
+FetchContent_MakeAvailable(glm)
+
 # Linking
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     SDL3::SDL3
 #    OpenGL::OpenGL
     glad
+    glm::glm
     ${CMAKE_DL_LIBS} # Needed for glad - https://stackoverflow.com/a/56842079/2394163
 )
