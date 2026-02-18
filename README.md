@@ -20,3 +20,6 @@ cmake --build build
 
 # Third Party Libraries
 - SDL3
+- glad
+- stb_image
+- glm
