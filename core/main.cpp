@@ -15,6 +15,7 @@
 
 #include <Utils/primitives.hpp>
 #include <Utils/shader.hpp>
+#include <Utils/camera.hpp>
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
@@ -25,7 +26,10 @@ unsigned int texture_container;
 unsigned int texture_reimu;
 int width;
 int height;
+double delta = 0.0f;
+Uint64 tick_last = 0;
 Shader base_shader;
+Camera main_camera;
 
 /* Forward Declaration. Cringe, remove later */
 void BasicScene();
@@ -68,7 +72,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 
     SDL_GetWindowSize(window, &width, &height);
     glViewport(0, 0, width, height);
+
     glEnable(GL_DEPTH_TEST);
+
+    main_camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f)); // Starting pos
+
+    if (!SDL_SetWindowRelativeMouseMode(window, true)) {
+        SDL_Log("Something fcked up g, can't set WindowRelative: %s", SDL_GetError());
+    }
 
     BasicScene();
 
@@ -89,10 +100,13 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 		glViewport(0, 0, width, height);
     }
 
+    if (event->type == SDL_EVENT_MOUSE_MOTION) {
+        main_camera.ProcessMouseMovement(event->motion.xrel, -event->motion.yrel);
+    }
+
     return SDL_APP_CONTINUE;
 }
 
-Uint64 tick_last = SDL_GetTicks();
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
@@ -101,18 +115,39 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+    // @TODO:
+    // WASD Movement
+    // Move to it's own function soon
+    // Has to be called per Iteration, because AppEvent don't automatically repeat on it's own
+    const bool *key_states = SDL_GetKeyboardState(NULL);
+
+    if (key_states[SDL_SCANCODE_W]) {
+        main_camera.ProcessKeyboard(FORWARD, delta);
+    } 
+
+    if (key_states[SDL_SCANCODE_S]) {
+        main_camera.ProcessKeyboard(BACKWARD, delta);
+    }
+
+    if (key_states[SDL_SCANCODE_A]) {
+        main_camera.ProcessKeyboard(LEFT, delta);
+    }
+
+    if (key_states[SDL_SCANCODE_D]) {
+        main_camera.ProcessKeyboard(RIGHT, delta);
+    }
+
     // Transformation matrixes
     base_shader.use();
     glm::mat4 model = glm::mat4(1);
 
     Uint64 tick_current = SDL_GetTicks();
-    Uint64 delta = tick_current - tick_last;
+    delta = (double)((tick_current - tick_last) * 0.001f); // Ugly casting. Very cringe tbh
     tick_last = tick_current;
 
-    model = glm::rotate(model, glm::radians(45.0f + SDL_GetTicks()) * 0.1f, glm::vec3(0.5f, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(45.0f + SDL_GetTicks()) * 0.01f, glm::vec3(0.5f, 1.0f, 0.0f));
 
-    glm::mat4 view = glm::mat4(1);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+    glm::mat4 view = main_camera.GetViewMatrix();
 
     glm::mat4 projection = glm::perspective(45.0f, (float) width / (float) height, 0.01f, 1000.0f);
 
