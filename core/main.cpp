@@ -23,6 +23,9 @@ static SDL_GLContext main_context;
 std::string base_path = SDL_GetBasePath();
 unsigned int texture_container;
 unsigned int texture_reimu;
+int width;
+int height;
+Shader base_shader;
 
 /* Forward Declaration. Cringe, remove later */
 void BasicScene();
@@ -31,6 +34,8 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
+    SDL_Init(SDL_INIT_VIDEO); // Required so RenderDoc can work
+
     SDL_GL_LoadLibrary(NULL);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -40,7 +45,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     /* Create the window */
-    window = SDL_CreateWindow("Grey Heavens", 800, 600, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Grey Heavens", 800, 600, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
     if (!window) {
         SDL_Log("Couldn't create window and renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -61,9 +66,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     // Sync to monitors refresh rate, idk
     SDL_GL_SetSwapInterval(1);
 
-    int w,h;
-    SDL_GetWindowSize(window, &w, &h);
-    glViewport(0, 0, w, h);
+    SDL_GetWindowSize(window, &width, &height);
+    glViewport(0, 0, width, height);
+    glEnable(GL_DEPTH_TEST);
+
     BasicScene();
 
     return SDL_APP_CONTINUE;
@@ -74,27 +80,52 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
     if ((event->type == SDL_EVENT_KEY_DOWN && event->key.key == SDLK_ESCAPE)
         ||
-        event->type == SDL_EVENT_QUIT) 
-    {
+        event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
     }
+
+    if (event->type == SDL_EVENT_WINDOW_RESIZED) {
+		SDL_GetWindowSize(window, &width, &height);
+		glViewport(0, 0, width, height);
+    }
+
     return SDL_APP_CONTINUE;
 }
 
+Uint64 tick_last = SDL_GetTicks();
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
     SDL_GL_SwapWindow(window);
 
     glClearColor(0.0f, 0.5f, 1.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    // Transformation matrixes
+    base_shader.use();
+    glm::mat4 model = glm::mat4(1);
+
+    Uint64 tick_current = SDL_GetTicks();
+    Uint64 delta = tick_current - tick_last;
+    tick_last = tick_current;
+
+    model = glm::rotate(model, glm::radians(45.0f + SDL_GetTicks()) * 0.1f, glm::vec3(0.5f, 1.0f, 0.0f));
+
+    glm::mat4 view = glm::mat4(1);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+
+    glm::mat4 projection = glm::perspective(45.0f, (float) width / (float) height, 0.01f, 1000.0f);
+
+    base_shader.setMat4("model", model);
+    base_shader.setMat4("view", view);
+    base_shader.setMat4("projection", projection);
 
     // Bind and draw
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture_container);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture_reimu);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     return SDL_APP_CONTINUE;
 }
@@ -106,16 +137,16 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 void BasicScene() 
 {
-    Primitives::UseVAOPlane();
+    Primitives::UseVAOCube();
     std::string container_image_path = "assets/textures/container2.png";
     texture_container = TextureFromFile(container_image_path.c_str(), base_path);
 
     std::string reimu_image_path = "assets/textures/reimu_timbersaw.png";
     texture_reimu = TextureFromFile(reimu_image_path.c_str(), base_path);
 
-    std::string shader_vert_path = base_path + "assets/shaders/basic/plane.vert";
-    std::string shader_frag_path = base_path + "assets/shaders/basic/plane.frag";
-    Shader base_shader(shader_vert_path.c_str(), shader_frag_path.c_str());
+    std::string shader_vert_path = base_path + "assets/shaders/basic/cube.vert";
+    std::string shader_frag_path = base_path + "assets/shaders/basic/cube.frag";
+    base_shader = Shader(shader_vert_path.c_str(), shader_frag_path.c_str());
 
     base_shader.use();
     base_shader.setInt("texture1", 0);
