@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -21,19 +22,26 @@ static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 static SDL_GLContext main_context;
 
-std::string base_path = SDL_GetBasePath();
-unsigned int texture_container;
-unsigned int texture_reimu;
 int width;
 int height;
 double delta = 0.0f;
 Uint64 tick_last = 0;
+
+std::string base_path = SDL_GetBasePath();
+
 Shader base_shader;
+unsigned int texture_container;
+unsigned int texture_reimu;
+
+Shader skybox_shader;
+unsigned int skybox_texture;
+
 Camera main_camera;
 
 /* Forward Declaration. Cringe, remove later */
 void BasicScene();
 unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma = false);
+unsigned int loadCubemap(std::vector<std::string> faces);
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -156,11 +164,26 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     base_shader.setMat4("projection", projection);
 
     // Bind and draw
+    Primitives::UseVAOCube();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture_container);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture_reimu);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    // Draw Skybox
+    Primitives::UseVAOSkybox();
+    glDepthFunc(GL_LEQUAL);
+    skybox_shader.use();
+
+    view = glm::mat4(glm::mat3(main_camera.GetViewMatrix())); // To stop translation
+    skybox_shader.setMat4("view", view);
+    skybox_shader.setMat4("projection", projection);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_texture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDepthFunc(GL_LESS);
 
     return SDL_APP_CONTINUE;
 }
@@ -172,7 +195,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 void BasicScene() 
 {
-    Primitives::UseVAOCube();
     std::string container_image_path = "assets/textures/container2.png";
     texture_container = TextureFromFile(container_image_path.c_str(), base_path);
 
@@ -186,6 +208,25 @@ void BasicScene()
     base_shader.use();
     base_shader.setInt("texture1", 0);
     base_shader.setInt("texture2", 1);
+
+    /// Skybox
+    ///
+    /// faces contains file names
+    std::vector<std::string> faces
+	{
+		"right.jpg",
+		"left.jpg",
+		"top.jpg",
+		"bottom.jpg",
+		"front.jpg",
+		"back.jpg"
+	};
+    skybox_texture = loadCubemap(faces);  
+    std::string skybox_vert_path = base_path + "assets/shaders/basic/skybox.vert";
+    std::string skybox_frag_path = base_path + "assets/shaders/basic/skybox.frag";
+    skybox_shader = Shader(skybox_vert_path.c_str(), skybox_frag_path.c_str());
+    skybox_shader.use();
+    skybox_shader.setInt("skybox", 0);
 }
 
 unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma)
@@ -229,3 +270,38 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 
     return textureID;
 }
+
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        std::string face_path = base_path + "assets/textures/cubemap/" + faces[i];
+
+        stbi_set_flip_vertically_on_load(false); // tell stb_image.h to flip loaded texture's on the y-axis.
+        unsigned char *data = stbi_load(face_path.c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}  
