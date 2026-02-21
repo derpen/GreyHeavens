@@ -1,6 +1,8 @@
 # Cmake is a mistake to humanity
 
-cmake_minimum_required(VERSION 3.16)
+# cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+cmake_minimum_required(VERSION 3.20)
 project(GreyHeavens)
 
 # set the output directory for built objects.

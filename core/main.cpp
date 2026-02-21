@@ -29,14 +29,52 @@ Uint64 tick_last = 0;
 
 std::string base_path = SDL_GetBasePath();
 
-Shader base_shader;
-unsigned int texture_container;
+Shader box_shader;
 unsigned int texture_reimu;
+
+Shader plane_shader;
+unsigned int texture_morning;
 
 Shader skybox_shader;
 unsigned int skybox_texture;
 
 Camera main_camera;
+
+std::vector<glm::vec3> boxes_pos = {
+    glm::vec3( 0.0f,  0.0f,  0.0f), 
+    glm::vec3( 0.0f,  1.0f,  0.0f), 
+    glm::vec3( 0.0f,  2.0f,  0.0f), 
+    glm::vec3( 0.0f,  3.0f,  0.0f), 
+    glm::vec3( 0.0f,  4.0f,  0.0f), 
+    glm::vec3( 0.0f,  5.0f,  0.0f), 
+    glm::vec3( 0.0f,  6.0f,  0.0f), 
+    glm::vec3( 0.0f,  7.0f,  0.0f), 
+    glm::vec3( 0.0f,  8.0f,  0.0f), 
+    glm::vec3( 0.0f,  9.0f,  0.0f), 
+    glm::vec3( 0.0f,  10.0f,  0.0f), 
+
+    glm::vec3( 1.0f,  0.0f,  0.0f), 
+    glm::vec3( 1.1f,  1.0f,  0.0f), 
+    glm::vec3( 1.2f,  2.0f,  0.0f), 
+    glm::vec3( 1.3f,  3.0f,  0.0f), 
+    glm::vec3( 1.4f,  4.0f,  0.0f), 
+    glm::vec3( 1.5f,  5.0f,  0.0f), 
+    glm::vec3( 1.6f,  6.0f,  0.0f), 
+    glm::vec3( 1.7f,  7.0f,  0.0f), 
+    glm::vec3( 1.8f,  8.0f,  0.0f), 
+    glm::vec3( 1.9f,  9.0f,  0.0f), 
+
+    glm::vec3( 2.0f,  0.0f,  0.0f), 
+    glm::vec3( 2.1f,  1.0f,  0.0f), 
+    glm::vec3( 2.2f,  2.0f,  0.0f), 
+    glm::vec3( 2.3f,  3.0f,  0.0f), 
+    glm::vec3( 2.4f,  4.0f,  0.0f), 
+    glm::vec3( 2.5f,  5.0f,  0.0f), 
+    glm::vec3( 2.6f,  6.0f,  0.0f), 
+    glm::vec3( 2.7f,  7.0f,  0.0f), 
+    glm::vec3( 2.8f,  8.0f,  0.0f), 
+    glm::vec3( 2.9f,  9.0f,  0.0f), 
+};
 
 /* Forward Declaration. Cringe, remove later */
 void BasicScene();
@@ -57,7 +95,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     /* Create the window */
-    window = SDL_CreateWindow("Grey Heavens", 800, 600, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Grey Heavens", 800, 600, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_MAXIMIZED);
     if (!window) {
         SDL_Log("Couldn't create window and renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -145,31 +183,47 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         main_camera.ProcessKeyboard(RIGHT, delta);
     }
 
-    // Transformation matrixes
-    base_shader.use();
-    glm::mat4 model = glm::mat4(1);
-
     Uint64 tick_current = SDL_GetTicks();
-    delta = (double)((tick_current - tick_last) * 0.001f); // Ugly casting. Very cringe tbh
+    delta = (double)((tick_current - tick_last) * 0.001f); // @TODO: Ugly casting. Very cringe tbh
     tick_last = tick_current;
 
-    model = glm::rotate(model, glm::radians(45.0f + SDL_GetTicks()) * 0.01f, glm::vec3(0.5f, 1.0f, 0.0f));
+    // Draw boxes
+    box_shader.use();
 
     glm::mat4 view = main_camera.GetViewMatrix();
-
     glm::mat4 projection = glm::perspective(45.0f, (float) width / (float) height, 0.01f, 1000.0f);
 
-    base_shader.setMat4("model", model);
-    base_shader.setMat4("view", view);
-    base_shader.setMat4("projection", projection);
-
-    // Bind and draw
     Primitives::UseVAOCube();
+    for (int i = 0; i < boxes_pos.size() ; ++i) {
+		glm::mat4 model = glm::mat4(1);
+        model = glm::translate(model, boxes_pos[i]);
+
+		//model = glm::rotate(model, glm::radians(45.0f + SDL_GetTicks()) * 0.01f, glm::vec3(0.5f, 1.0f, 0.0f));
+
+		box_shader.setMat4("model", model);
+		box_shader.setMat4("view", view);
+		box_shader.setMat4("projection", projection);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture_reimu);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    // Draw Plane
+    Primitives::UseVAOPlane();
+	glm::mat4 model = glm::mat4(1);
+	model = glm::rotate(model, glm::pi<float>() / 2.0f, glm::vec3(-1.0f, 0.0f, 0.0f));
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f)); // @TODO: not sure why yet but Z seems to be up down
+    model = glm::scale(model, glm::vec3(10.0f));
+
+	plane_shader.use();
+	plane_shader.setMat4("model", model);
+	plane_shader.setMat4("view", view);
+	plane_shader.setMat4("projection", projection);
+
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture_container);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture_reimu);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindTexture(GL_TEXTURE_2D, texture_morning);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // @TODO: need to remember I can do DrawElements for planes
 
     // Draw Skybox
     Primitives::UseVAOSkybox();
@@ -195,22 +249,21 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
 void BasicScene() 
 {
-    std::string container_image_path = "assets/textures/container2.png";
-    texture_container = TextureFromFile(container_image_path.c_str(), base_path);
-
+    ///
+    /// Box
+    ///
     std::string reimu_image_path = "assets/textures/reimu_timbersaw.png";
     texture_reimu = TextureFromFile(reimu_image_path.c_str(), base_path);
 
-    std::string shader_vert_path = base_path + "assets/shaders/basic/cube.vert";
-    std::string shader_frag_path = base_path + "assets/shaders/basic/cube.frag";
-    base_shader = Shader(shader_vert_path.c_str(), shader_frag_path.c_str());
+    std::string box_vert_path = base_path + "assets/shaders/basic/cube.vert";
+    std::string box_frag_path = base_path + "assets/shaders/basic/cube.frag";
+    box_shader = Shader(box_vert_path.c_str(), box_frag_path.c_str());
 
-    base_shader.use();
-    base_shader.setInt("texture1", 0);
-    base_shader.setInt("texture2", 1);
+    box_shader.use();
+    box_shader.setInt("texture1", 0);
 
-    /// Skybox
     ///
+    /// Skybox
     /// faces contains file names
     std::vector<std::string> faces
 	{
@@ -227,6 +280,19 @@ void BasicScene()
     skybox_shader = Shader(skybox_vert_path.c_str(), skybox_frag_path.c_str());
     skybox_shader.use();
     skybox_shader.setInt("skybox", 0);
+
+    ///
+    /// Plane
+    ///
+	std::string morning_image_path = "assets/textures/bad_morning.jpg";
+	texture_morning = TextureFromFile(morning_image_path.c_str(), base_path);
+
+	std::string plane_vert_path = base_path + "assets/shaders/basic/plane.vert";
+	std::string plane_frag_path = base_path + "assets/shaders/basic/plane.frag";
+	plane_shader = Shader(plane_vert_path.c_str(), plane_frag_path.c_str());
+
+	plane_shader.use();
+	plane_shader.setInt("texture1", 0);
 }
 
 unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma)
