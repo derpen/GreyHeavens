@@ -18,6 +18,8 @@
 #include <Utils/shader.hpp>
 #include <Utils/camera.hpp>
 
+#include <Jolt/Jolt.h>
+
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 static SDL_GLContext main_context;

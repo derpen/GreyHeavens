@@ -1,7 +1,5 @@
 # Cmake is a mistake to humanity
 
-# cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-
 cmake_minimum_required(VERSION 3.20)
 project(GreyHeavens)
 
@@ -9,6 +7,18 @@ project(GreyHeavens)
 # This makes sure that the dynamic library goes into the build directory automatically.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
+
+## Jolt BULLSHIT HERE
+# The configurations we support
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Distribution")
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+## Jolt BULLSHIT DONE FOR NOW
 
 # Variables
 set(VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
@@ -21,7 +31,6 @@ include_directories(core/include)
 # Third Parties
 add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
 include_directories(vendor/stb_image)
-
 
 set(PROJECT_FILES ${SRC_FILES})
 add_executable(${PROJECT_NAME} WIN32 ${PROJECT_FILES} core/main.cpp)
@@ -79,11 +88,23 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+## Jolt BULLSHIT ELECTRIC BOOGALOO
+include(FetchContent)
+FetchContent_Declare(
+	JoltPhysics
+        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
+        GIT_TAG "v5.5.0"
+	SOURCE_SUBDIR "Build"
+)
+FetchContent_MakeAvailable(JoltPhysics)
+## Jolt BULLSHIT DONE
+
 # Linking
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     SDL3::SDL3
-#    OpenGL::OpenGL
+#   OpenGL::OpenGL
     glad
     glm::glm
+    Jolt
     ${CMAKE_DL_LIBS} # Needed for glad - https://stackoverflow.com/a/56842079/2394163
 )
