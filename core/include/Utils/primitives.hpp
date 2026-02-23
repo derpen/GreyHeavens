@@ -5,6 +5,10 @@
 /// @TODO:
 /// Better naming convention required
 /// Right now it's too hacky
+/// 
+/// Also, using manual vertices suck so bad, need to fix those.
+/// Might not be needed tho, I'll just use a model loader in
+/// the future to handle primitives.
 namespace Primitives {
 
 /// 
@@ -13,10 +17,10 @@ namespace Primitives {
 unsigned int plane_VBO, plane_VAO, plane_EBO;
 static const float plane_vertices[] = {
 	// positions          // colors           // texture coords
-	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+	 1.0f,  0.0f,  1.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+	 1.0f,  0.0f, -1.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+	-1.0f,  0.0f, -1.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+	-1.0f,  0.0f,  1.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 };
 
 static const unsigned int plane_indices[] = {
@@ -61,48 +65,48 @@ void UseVAOPlane() {
 /// 
 unsigned int cube_VBO, cube_VAO;
 static const float cube_vertices[] = {
-    // Verts              TextureCoord
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	// back face
+	-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, // bottom-left
+	0.5f, 0.5f, -0.5f, 1.0f, 1.0f, // top-right
+	0.5f, -0.5f, -0.5f, 1.0f, 0.0f, // bottom-right
+	0.5f, 0.5f, -0.5f, 1.0f, 1.0f, // top-right
+	-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, // bottom-left
+	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+	// front face
+	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, // bottom-right
+	0.5f, 0.5f, 0.5f, 1.0f, 1.0f, // top-right
+	0.5f, 0.5f, 0.5f, 1.0f, 1.0f, // top-right
+	-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, // top-left
+	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+	// left face
+	-0.5f, 0.5f, 0.5f, 1.0f, 0.0f, // top-right
+	-0.5f, 0.5f, -0.5f, 1.0f, 1.0f, // top-left
+	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-left
+	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-left
+	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-right
+	-0.5f, 0.5f, 0.5f, 1.0f, 0.0f, // top-right
+	// right face
+	0.5f, 0.5f, 0.5f, 1.0f, 0.0f, // top-left
+	0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-right
+	0.5f, 0.5f, -0.5f, 1.0f, 1.0f, // top-right
+	0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-right
+	0.5f, 0.5f, 0.5f, 1.0f, 0.0f, // top-left
+	0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+	// bottom face
+	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // top-right
+	0.5f, -0.5f, -0.5f, 1.0f, 1.0f, // top-left
+	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, // bottom-left
+	0.5f, -0.5f, 0.5f, 1.0f, 0.0f, // bottom-left
+	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-right
+	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // top-right
+	// top face
+	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+	0.5f, 0.5f, 0.5f, 1.0f, 0.0f, // bottom-right
+	0.5f, 0.5f, -0.5f, 1.0f, 1.0f, // top-right
+	0.5f, 0.5f, 0.5f, 1.0f, 0.0f, // bottom-right
+	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+	-0.5f, 0.5f, 0.5f, 0.0f, 0.0f // bottom-left
 };
 
 void GenerateVAOCube() {
