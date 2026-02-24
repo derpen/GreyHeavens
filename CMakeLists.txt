@@ -10,14 +10,14 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 ## Jolt BULLSHIT HERE
 # The configurations we support
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Distribution")
+#set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Distribution")
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+#set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(USE_STATIC_MSVC_RUNTIME_LIBRARY ON)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+#set(USE_STATIC_MSVC_RUNTIME_LIBRARY ON)
+#set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 ## Jolt BULLSHIT DONE FOR NOW
 
 # Variables
@@ -89,15 +89,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 ## Jolt BULLSHIT ELECTRIC BOOGALOO
-include(FetchContent)
-FetchContent_Declare(
-	JoltPhysics
-        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
-        GIT_TAG "v5.5.0"
-	SOURCE_SUBDIR "Build"
-)
-FetchContent_MakeAvailable(JoltPhysics)
+#include(FetchContent)
+#FetchContent_Declare(
+#	JoltPhysics
+#        GIT_REPOSITORY "https://github.com/jrouwe/JoltPhysics"
+#        GIT_TAG "v5.5.0"
+#	SOURCE_SUBDIR "Build"
+#)
+#FetchContent_MakeAvailable(JoltPhysics)
 ## Jolt BULLSHIT DONE
+
+# Bullet
+#add_subdirectory(vendor/bullet-physics EXCLUDE_FROM_ALL)
+#target_include_directories(${PROJECT_NAME} PUBLIC vendor/bullet-physics/src)
 
 # Linking
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -105,6 +109,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 #   OpenGL::OpenGL
     glad
     glm::glm
-    Jolt
+    
+# Bullet
+#    LinearMath
+#    Bullet3Common
+#    BulletInverseDynamics
+#    BulletCollision
+#    BulletDynamics
+#    BulletSoftBody
+
+#    Jolt
+
     ${CMAKE_DL_LIBS} # Needed for glad - https://stackoverflow.com/a/56842079/2394163
 )
